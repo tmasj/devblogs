@@ -1,0 +1,40 @@
+{
+    "rdocCaptureSettings": 1,
+    "settings": {
+        "autoStart": false,
+        "commandLine": "",
+        "environment": [
+            {
+                "separator": "Platform style",
+                "type": "Set",
+                "value": "C:\\Users\\Thomas\\OneDrive\\Desktop\\voxex2\\target\\debug\\build\\glfw-sys-ef3dcb992c641a97\\out\\glfw-3.4.bin.WIN64\\lib-vc2022;C:\\Users\\Thomas\\OneDrive\\Desktop\\voxex2\\target\\debug\\deps;C:\\Users\\Thomas\\OneDrive\\Desktop\\voxex2\\target\\debug;C:\\Users\\Thomas\\.rustup\\toolchains\\1.92.0-x86_64-pc-windows-msvc\\lib\\rustlib\\x86_64-pc-windows-msvc\\lib;C:\\Users\\Thomas\\.cargo\\bin;C:\\Users\\Thomas\\AppData\\Local\\mise\\installs\\watchexec\\2.3.3\\watchexec-2.3.3-x86_64-pc-windows-msvc;C:\\Users\\Thomas\\AppData\\Local\\mise\\installs\\cargo-nu\\0.110.0\\bin;C:\\VulkanSDK\\1.4.335.0\\Bin;C:\\Python312\\Scripts\\;C:\\Python312\\;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.3\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.3\\libnvvp;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Windows\\System32\\OpenSSH\\;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\NVIDIA Corporation\\NVIDIA NvDLISR;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Windows\\System32\\OpenSSH\\;C:\\Program Files (x86)\\dotnet\\;C:\\Program Files\\dotnet\\;C:\\Program Files\\nodejs\\;C:\\ProgramData\\chocolatey\\bin;C:\\Program Files\\Tailscale\\;D:\\Program Files\\Git\\cmd;D:\\Program Files\\CMake\\bin;C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\;C:\\Users\\Thomas\\.cargo\\bin;C:\\Users\\Thomas\\anaconda3;C:\\Users\\Thomas\\anaconda3\\Library\\mingw-w64\\bin;C:\\Users\\Thomas\\anaconda3\\Library\\usr\\bin;C:\\Users\\Thomas\\anaconda3\\Library\\bin;C:\\Users\\Thomas\\anaconda3\\Scripts;C:\\Users\\Thomas\\AppData\\Local\\Microsoft\\WindowsApps;D:\\Program Files\\zig;C:\\Users\\Thomas\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\Thomas\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;C:\\Users\\Thomas\\AppData\\Roaming\\npm;C:\\Users\\Thomas\\AppData\\Local\\Microsoft\\WinGet\\Links;;C:\\Users\\Thomas\\.rustup\\toolchains\\1.92.0-x86_64-pc-windows-msvc\\bin",
+                "variable": "PATH"
+            },
+            {
+                "separator": "Platform style",
+                "type": "Set",
+                "value": "C:\\Users\\Thomas\\.rustup\\toolchains\\1.92.0-x86_64-pc-windows-msvc\\lib",
+                "variable": "LD_LIBRARY_PATH"
+            }
+        ],
+        "executable": "C:\\Users\\Thomas\\OneDrive\\Desktop\\voxex2\\target\\debug\\voxel-explore.exe",
+        "inject": false,
+        "numQueuedFrames": 0,
+        "options": {
+            "allowFullscreen": true,
+            "allowVSync": true,
+            "apiValidation": false,
+            "captureAllCmdLists": false,
+            "captureCallstacks": false,
+            "captureCallstacksOnlyDraws": false,
+            "debugOutputMute": true,
+            "delayForDebugger": 0,
+            "hookIntoChildren": false,
+            "refAllResources": false,
+            "softMemoryLimit": 0,
+            "verifyBufferAccess": false
+        },
+        "queuedFrameCap": 0,
+        "workingDir": "C:\\Users\\Thomas\\OneDrive\\Desktop\\voxex2"
+    }
+}
