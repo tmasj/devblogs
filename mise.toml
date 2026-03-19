@@ -1,0 +1,20 @@
+[tools]
+"cargo:nu" = "latest"
+
+[tasks.configure-git]
+description = "Easy git configuration for this project."
+quiet = true
+silent = true
+shell = "nu -c "
+run = '''
+git config pull.ff only;
+git config branch.master.mergeOptions "--squash";
+'''
+sources = [".git/config"]
+
+[tasks.develop]
+description = "Head task for setting up development"
+depends = ["configure-git"]
+
+[hooks]
+postinstall = ["mise run develop"]
