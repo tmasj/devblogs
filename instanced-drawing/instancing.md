@@ -28,7 +28,7 @@ pub struct Vertex {
 }
 ```
 
-Even such a lean struct does have a non-neglible memory cost. It is $4*3*3=36$ bytes. That is just simply too big. Remember from the README.md that voxel geometry memory demand scales cubically with volume. If we want to budget memory for billions of voxels and have space to spare, then this just won't do. If a Vertex uses 36 bytes, and a cube (with index buffering) uses 24 `Vertex`'s (four per face), then we need $24*36=864$ bytes for a cube. This is at least 864 times more than ideal. Especially in volumetric terms, this is a huge overhead for just one voxel. It implies large worlds would have abysmal loading times. And, that moving around any nontrivially-sized voxel environment even just at walking speed would incur periodic breaks and pauses, particularly in sparse environments where techniques such as occlusion culling don't apply. 
+Even such a lean struct does have a non-neglible memory cost. It is $4 * 3 * 3 = 36$ bytes. That is just simply too big. Remember from the README.md that voxel geometry memory demand scales cubically with volume. If we want to budget memory for billions of voxels and have space to spare, then this just won't do. If a Vertex uses 36 bytes, and a cube (with index buffering) uses 24 `Vertex`'s (four per face), then we need $24 * 36 = 864$ bytes for a cube. This is at least 864 times more than ideal. Especially in volumetric terms, this is a huge overhead for just one voxel. It implies large worlds would have abysmal loading times. And, that moving around any nontrivially-sized voxel environment even just at walking speed would incur periodic breaks and pauses, particularly in sparse environments where techniques such as occlusion culling don't apply. 
 
 Now, for the record, rest assured that it is rare that voxels fill a voxel world totally homogenously; a standard prior is that voxels tend to cluster, and that most space is empty. So, the standard approach is to segment the world into fixed-size chunks and apply some intelligent sparse chunk-selection algorithm. Because I have set my chunk memory size to 64 KiB to align with Windows' minimum allocation size, then this implies we get $65536/864 \approx 75$ voxels in a chunk. This is peanuts. Such a sparse chunk-loading algorithm would need to somehow bear most of the load to achieve realtime rendering performance, and we would need to cap render distance to tragic extremes. 
 
@@ -44,7 +44,7 @@ Observe that it is redundant for both whole chunks and voxel instances to carry 
 
 Here's a convenient mathematical coincidence. If we afford 2 bytes per instance position vector, then the number of representable offsets (5 bytes for each x, y, z position, plus one unused bit) is $(2^5)^3=32768$ representable offsets. Well, that is exactly equal to the number of 2-byte position vectors we could store in one chunk of the chosen allocation size, $64KiB / 2 bytes = 65536 / 2 = 32768$ voxels. This means each voxel can inhabit anywhere in the chunk, and that anywhere or everywhere in the chunk can be inhabited by a voxel. If we sacrificed on bytes per instance, then we wouldn't be able to place voxels arbitrarily in a chunk's associated world-space volume. If we piled on more bytes per instance or used a smaller chunk allocation size, then we would not be able to represent arbitrarily full chunks. So, the 2-byte representation perfectly balances chunk configurability and chunk fill-ability. And, it is an enourmous upgrade from 75 voxels.
 
-A note on chunk design. If we wanted chunks to use a 1-hot, dense matrix representation, then we could use as little as one bit per voxel. However, that would imply that empty space would constitute one instance, and we would be burning gpu wavefronts on ~30k voxels worth of empty space in chunks that may have as few as 1 voxel in them. This would not be acceptable in practice. Ideas for how to further improve the chunk design--including what could be done with the 1 currently unused bit per instance offset vector--are shared in section 4.
+A note on chunk design. If we wanted chunks to use a 1-hot, dense matrix representation, then we could use as little as one bit per voxel. However, that would imply that empty space would constitute one instance, and we would be burning gpu wavefronts on ~30k voxels worth of empty space in chunks that may have as few as 1 voxel in them. This would not be acceptable in practice. Ideas for how to further improve the chunk design--including what could be done with the 1 currently unused bit per instance offset vector--are shared in section 5.
 
 ### 3. Implementing instancing
 
@@ -111,7 +111,7 @@ fn procedural_sculpture_75voxel(self: &Self) -> Vec<VoxelInstanceParams> {
 }
 ```
 
-Then, I load this data into a `VkBuffer` indirectly using a staging buffer similar to the way [the Vulkan Tutorial explains here](https://vulkan-tutorial.com/Vertex_buffers/Staging_buffer). The difference is, I don't use just a plain `VkBuffer`. I developed a struct to encapsulate allocation, track the lifecycle of memory and any host mappings, and cache length/offset information of  the instance data in a `DataManifest` that I read off later when I draw. See `AllocatedDeviceBuffer` in `vulkan/device.rs` at the commit mentioned above.
+Then, I load this data into a `VkBuffer` indirectly using a staging buffer similar to the way [the Vulkan Tutorial explains here](https://vulkan-tutorial.com/Vertex_buffers/Staging_buffer). The difference is, I don't use just a plain `VkBuffer`. I developed a struct to encapsulate allocation, track the lifecycle of memory and any host mappings, and cache length/offset information of  the instance data in a `DataManifest` that I read off later when I draw. See `AllocatedDeviceBuffer` in `vulkan/device.rs` at commit e4cde3c for usage of the `DataManifest` type.
 
 ```rust
 // game.rs > impl GameGlobal > event_loop(..., rendering: &mut RenderingFlow)
@@ -211,17 +211,17 @@ Initially, I tried to use a VK_FORMAT_R5G5B5A1_UNORM_PACK16 in the attribute des
 
 Apparently, vertex buffers don't support some `VkFormat`'s. So I settled for `R16_UINT` and handled unpacking the vec3 myself in the shader.
 
-Let's incorporate the bindings into the graphics pipeline. I keep my functions for creating structures that support rendering organized in methods of a type called `RenderingContext`.
+Let's incorporate the bindings into the graphics pipeline's setup configuration. I keep my functions for creating structures that support rendering organized in methods of a type called `RenderingContext`.
 
 ```rust
 // vulkan/rendering.rs > impl RenderingContext > new_pipeline(...)
 let vertex_binding_descriptions = [
     Vertex::binding_description(),
-    VoxelInstanceParams::binding_description(),
+    VoxelInstanceParams::binding_description(), // Our new bindings
 ];
 let mut vertex_attribute_descriptions = Vec::<_>::from(Vertex::attribute_descriptions());
 let mut voxinst_attribute_descriptions =
-    Vec::<_>::from(VoxelInstanceParams::attribute_descriptions());
+    Vec::<_>::from(VoxelInstanceParams::attribute_descriptions()); // Our new attributes
 vertex_attribute_descriptions.append(&mut voxinst_attribute_descriptions);
 let vertex_input_create_info = vk::PipelineVertexInputStateCreateInfo::default()
     .vertex_binding_descriptions(&vertex_binding_descriptions)
@@ -238,7 +238,7 @@ For reference, this `vertex_input_create_info` configuration is used to build th
 
 let graphics_pipeline_create_info = vk::GraphicsPipelineCreateInfo::default()
     .stages(&shader_stages)
-    .vertex_input_state(&vertex_input_create_info) // Passed in here
+    .vertex_input_state(&vertex_input_create_info) // Our updated binding config passed in here
     .viewport_state(&viewport_create_info)
     // ... other configuration et cetera ...
 
@@ -330,7 +330,7 @@ void vkCmdDrawIndexed(
     uint32_t                                    firstInstance);
 ```
 
-This will instance and draw the vertex geometry inhabiting the bound vertex buffer in the region described by `vertexOffset` and `instanceCount`. Here, `instanceCount` is the number of instances of the geometry to draw. `firstInstance` is a customizable field in case you want `gl_BaseInstance` to be something other than 0. `gl_InstanceIndex` will start at the base value and increment per instance. This is useful in case your geometry is conditional on the instance ID, or you want to pull in associated complementary data (such as chunk attributes) from another buffer in the vertex shader. 
+This will instance and draw the vertex geometry inhabiting the bound vertex buffer in the region described by `vertexOffset` and `indexCount`. Here, `instanceCount` is the number of instances of the geometry to draw. `firstInstance` is a customizable field in case you want [the GLSL built-in variable](https://docs.vulkan.org/glsl/latest/chapters/builtins.html) `gl_BaseInstance` to be something other than 0. `gl_InstanceIndex` will start at the base value and increment per instance. This is useful in case your geometry is conditional on the instance ID, or you want to pull in associated complementary data (such as chunk attributes) from another buffer in the vertex shader. 
 
 ### Updating the vertex shader
 
@@ -355,7 +355,7 @@ uint instz = uint((instanceRelPos >> 1)  & 0x1F);
 vec3 pos = inPosition + vec3(instx,insty,instz);
 ```
 
-Now we are ready to do our typical vertex shader calculations, to compute NDC coordinates and any other desired values, such as:
+Now we are ready to do our typical vertex shader calculations, to compute NDC's and any other desired values.
 
 ```glsl
 // shader/shader.vert > main()
@@ -378,13 +378,13 @@ for (k, v) in std::env::vars() { println!("{k}={v}"); }
 
 Then I searched for `PATH` and `LD_LIBRARY_PATH` in the output, and cribbed over the values. This enabled my system to find the needed shared libraries, like from `libglfw`, from Cargo's `deps/` directory. Once done, the app should launch fine and you can take captures with F12. The good news is, I am already convinced that it's worth it to teach `cargo` how to produce a fully redistributable target executable.
 
-![Renderdoc screenshot of vertex buffer state, no instancing](<../renderdoc-captures/instancing-control-branch captures b25ba8a/vertex buffer inspection instancing-control-branch.PNG>)
+![Renderdoc screenshot of vertex buffer state, no instancing](<../instanced-drawing/renderdoc-captures/instancing-control-branch captures b25ba8a/vertex buffer inspection instancing-control-branch.PNG>)
 
 Above is a Renderdoc screenshot that shows the state of the vertex buffer during a running frame of commit b25ba8a. I can, for example, scan to see if the buffer memory has any gaps in it which waste space. In the screenshot above, I opened the Buffer Contents by navigated from the pane for the Buffer resource bound as the vertex buffer (which buffer is which is evident from the associated API call), then clicked "View Contents =>" in the upper right of the panel. The Format field shown takes a DSL that quite looks similar to GLSL to display contents in a human-readable table.
 
 In this first capture, as the screenshot suggests, you can observe that the vertex data fills 1795 rows, almost all of the buffer. Let's look at the next screenshot, a capture taken from launching version e4cde3c of VOXEL EXPLORE:
 
-![Renderdoc screenshot of instance buffer state](<../renderdoc-captures/instancing captures e4cde3c/instance buffer inspection instancing.PNG>)
+![Renderdoc screenshot of instance buffer state](<../instanced-drawing/renderdoc-captures/instancing captures e4cde3c/instance buffer inspection instancing.PNG>)
 
 Buffer 172 above is the instance buffer, and Buffer 154 is still the vertex buffer. This capture validates that the new instance buffer is used and sequenced as intended. As the screenshot above suggests, the game geometry of `procedural_sculpture_75voxel` uses vastly less Buffer space. Granted, the positions of the procedural helix had to be rounded to be cast to integers, producing a somewhat less smooth and aesthetic procedural structure. But, the space savings are worth it. (Remember, fractional voxel offsets are not architecturally ruled out, just outsourced to chunk-level attributes, and I want to show the memory layout of just one chunk here.)
 
