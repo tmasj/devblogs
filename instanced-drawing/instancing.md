@@ -179,11 +179,7 @@ If we want to bind a new instance buffer during draw recording, we have to tell 
 ```rust
 // geometry_primitives.rs
 impl VoxelInstanceParams {
-    pub fn new(v: Vec3) -> Self {
-        let cast = |float: f32| (float.round() + 0.0001) as u16 % 32;
-        let (r5, g5, b5) = (cast(v.x), cast(v.y), cast(v.z));
-        return Self((r5 << 11) | (g5 << 6) | (b5 << 1));
-    }
+    // pub fn new(...) { ... }  // defined above
 
     pub fn binding_description() -> vk::VertexInputBindingDescription {
         vk::VertexInputBindingDescription::default()
