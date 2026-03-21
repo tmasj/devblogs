@@ -8,7 +8,6 @@ silent = true
 shell = "nu -c "
 run = '''
 git config pull.ff only;
-git config branch.master.mergeOptions "--squash";
 '''
 sources = [".git/config"]
 
