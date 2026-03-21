@@ -1,14 +1,10 @@
----
-layout: default
-title: Instancing
----
 ## Instancing: The GPU feature made for voxels 
 
-_Instancing_ in general was made for the many-alike situation in GPU rendering that comes up often in game development with foliage, signs, and trees. However, the [Vulkan Tutorial](https://vulkan-tutorial.com/Introduction) explicitly skips instancing, and doesn't discuss its use case. This devblog aims to address that gap and cover how it applies to VOXEL EXPLORE.
+Instancing is the GPU's hardware-native solution to the many-alike problem — foliage, crowds, voxels. Yet the [Vulkan Tutorial](https://vulkan-tutorial.com/Introduction) skips it entirely, and the [official coverage](https://docs.vulkan.org/tutorial/latest/Building_a_Simple_Engine/Loading_Models/06_multiple_objects.html#_advanced_techniques_hardware_instancing) that does exist lives inside a large tutorial engine. This devblog covers instancing from the ground up, targeted at readers who just finished the Vulkan Tutorial. Instancing is the first major optimization I have applied to [VOXEL EXPLORE](https://github.com/tmasj/voxel-explore), my new Vulkan/Rust voxel renderer project.
 
 In this article, I will discuss: 
 1. What instancing is on a high-level, and why instancing is essential for voxel rendering.
-2. How instancing improves my chunk layout so I can draw more voxels. My new chunk layout can support 435 times more voxels, thanks to instancing.
+2. How instancing improves the VOXEL EXPLORE chunk layout so I can draw more voxels. My new chunk layout can support 435 times more voxels per chunk, thanks to instancing.
 3. How to implement instanced rendering, intended for readers who followed the Vulkan Tutorial (C++ or Rust) and got at least as far as the chapter on indexed draws.
 4. An alternative approach to implementing instancing in Vulkan worth mentioning, compared.
 5. Several ideas I have on how to improve the chunk representation even further for even better amortized voxel memory density.
@@ -179,11 +175,7 @@ If we want to bind a new instance buffer during draw recording, we have to tell 
 ```rust
 // geometry_primitives.rs
 impl VoxelInstanceParams {
-    pub fn new(v: Vec3) -> Self {
-        let cast = |float: f32| (float.round() + 0.0001) as u16 % 32;
-        let (r5, g5, b5) = (cast(v.x), cast(v.y), cast(v.z));
-        return Self((r5 << 11) | (g5 << 6) | (b5 << 1));
-    }
+    // pub fn new(...) { ... }  // defined above
 
     pub fn binding_description() -> vk::VertexInputBindingDescription {
         vk::VertexInputBindingDescription::default()
@@ -423,7 +415,7 @@ Speaking of sparse chunks--our chunks, when sparse, are mostly empty, wasted spa
 
 Another approach to addressing the gaps would be to make chunks smaller. Though, then we get less benefit from outsourcing to chunk-level attributes, since there would need to be more chunks for the same render distance, so any space advantages would need to be weighed with losses for storing more chunk attributes. Also, remember we already selected Windows minimum allocation size as chunk size. Even if we defined a smaller logical chunk format, we'd still be allocating and uploading 64KiB host buffers before any GPU-side compaction--the OS doesn't give us finer-grained staging for free. Thirdly, smaller chunk would mean we now overrepresent relative position in the instance parameters unless all positions of our new chunk size could be fully represented in one byte. A smaller chunk side length by a factor of $c$, recall, demands $O(c^3)$ more worst-case chunk loads, and this is not a benefit unless each chunk load has commensurately less work to do for a smaller memory region. So, it is possible to reduce chunk size, but the solution would need to consider the ramifications for sparse chunk loading and the format of chunk attributes and instance parameters.
 
-I will leave the unused chunk space thread there for now, since I want to bring up the 1-hot voxel representation again. As I said, the naive dense-matrix approach would not be viable, since most space is empty and we would burn up our GPU cores mostly on 0's. That said, I will entertain hybrid strategies. There is no law that says one instance parameter set must correspond to exactly one voxel. It is also not illegal altogether for a vertex shader to output degenerate coordinates for masked geometry. If a vertex shader outputs `vec4(0,0,0,0)`, then that coordinate is immediately culled before it hits the rasterizer--a modest impact on our processing pipeline, optimistically speaking. So, let's entertain pairing our instance parameters with an extra byte as a 1-hot mask for a _sparse octet_. Since we want to extract 1 bit from this mask once per voxel from the same bitset, we would loop the same instance parameters 8 times per octet. Remember this can be done if we enable the `VK_EXT_vertex_attribute_divisor` extension to set a `VkVertexInputBindingDivisorDescription` divisor of 8. 
+I will leave the unused chunk space thread there for now, since I want to bring up the 1-hot voxel representation again. As I said, the naive dense-matrix approach would not be viable, since most space is empty and we would burn up our GPU cores mostly on 0's. That said, I will entertain hybrid strategies. There is no law that says one instance parameter set must correspond to exactly one voxel. It is also not illegal altogether for a vertex shader to output degenerate coordinates for masked geometry. If a vertex shader outputs `vec4(0,0,0,0)`, then that coordinate is immediately culled before it hits the rasterizer--a modest impact on our processing pipeline, optimistically speaking. So, let's entertain pairing our instance parameters with an extra byte as a 1-hot mask for a _sparse octet_. Since we want to extract 1 bit from this mask once per voxel instance from the same bitset, we would reuse each set instance parameters 8 times, or once per masking bit. Remember this can be done if we enable the `VK_EXT_vertex_attribute_divisor` extension to set a `VkVertexInputBindingDivisorDescription` divisor of 8. 
 
 The sparse octet can represent 8 voxels per 3 bytes rather than 1 voxel per 2 bytes, or about a 5.3 times increase in the number of represented voxels per bit, in the best case. This representation only benefits the number of renderable voxels if voxels tend to cluster with their immediate neighbor. That said, if chunks are logically assigned to contiguous volumes, then this volume multiplies by 5 and so reduces chunk loads of dense voxel geometry by a factor of $5^3=125$. 
 
