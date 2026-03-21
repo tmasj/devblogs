@@ -4,11 +4,11 @@ title: Instancing
 ---
 ## Instancing: The GPU feature made for voxels 
 
-_Instancing_ in general was made for the many-alike situation in GPU rendering that comes up often in game development with foliage, signs, and trees. However, the [Vulkan Tutorial](https://vulkan-tutorial.com/Introduction) explicitly skips instancing, and doesn't discuss its use case. This devblog aims to address that gap and cover how it applies to VOXEL EXPLORE.
+Instancing is the GPU's hardware-native solution to the many-alike problem — foliage, crowds, voxels. Yet the [Vulkan Tutorial](https://vulkan-tutorial.com/Introduction) skips it entirely, and the [official coverage](https://docs.vulkan.org/tutorial/latest/Building_a_Simple_Engine/Loading_Models/06_multiple_objects.html#_advanced_techniques_hardware_instancing) that does exist lives inside a large tutorial engine. This devblog covers instancing from the ground up, targeted at readers who just finished the Vulkan Tutorial. Instancing is the first major optimization I have applied to [VOXEL EXPLORE](https://github.com/tmasj/voxel-explore), my new Vulkan/Rust voxel renderer project.
 
 In this article, I will discuss: 
 1. What instancing is on a high-level, and why instancing is essential for voxel rendering.
-2. How instancing improves my chunk layout so I can draw more voxels. My new chunk layout can support 435 times more voxels, thanks to instancing.
+2. How instancing improves the VOXEL EXPLORE chunk layout so I can draw more voxels. My new chunk layout can support 435 times more voxels per chunk, thanks to instancing.
 3. How to implement instanced rendering, intended for readers who followed the Vulkan Tutorial (C++ or Rust) and got at least as far as the chapter on indexed draws.
 4. An alternative approach to implementing instancing in Vulkan worth mentioning, compared.
 5. Several ideas I have on how to improve the chunk representation even further for even better amortized voxel memory density.
